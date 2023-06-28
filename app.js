@@ -2,9 +2,11 @@ const express = require("express");
 
 const app = express();
 
+require("dotenv").config();
+
 const mongoose = require("mongoose");
 
-const connectionString = `mongodb+srv://nomag:nomag@cluster0.ox84nbh.mongodb.net/?retryWrites=true&w=majority`;
+const connectionString = process.env.MONGODB_CONNECTION_STRING;
 
 const bookRoutes = require("./routes/book");
 
@@ -35,8 +37,11 @@ app.use((req, res, next) => {
   next();
 });
 
+console.log(process.env.MONGODB_CONNECTION_STRING);
+
 app.use("/api/books", bookRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/images", express.static(path.join(__dirname, "images")));
+app.use("/images2", express.static(path.join(__dirname, "images2")));
 
 module.exports = app;

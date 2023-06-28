@@ -2,18 +2,23 @@ const Book = require("../models/book");
 const sharp = require("sharp");
 const fs = require("fs");
 
+// Créer un nouveau livre
 exports.createBook = (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
   delete bookObject._userId;
   let path = "./images/" + req.file.filename;
   let newpath = "./images2/" + req.file.filename;
+
+  // Redimensionner et traiter l'image en utilisant sharp
   sharp(path)
     .resize(498, 568)
     .png()
     .toFile(newpath)
     .then((data) => {
       console.log("images ok");
+
+      // Créer un nouvel objet livre avec les données fournies
       const book = new Book({
         ...bookObject,
         userId: req.auth.userId,
@@ -22,6 +27,7 @@ exports.createBook = (req, res, next) => {
         }`,
       });
 
+      // Enregistrer le livre dans la base de données
       book
         .save()
         .then(() => {
@@ -36,6 +42,7 @@ exports.createBook = (req, res, next) => {
     });
 };
 
+// Récupérer un livre spécifique
 exports.getOneBook = (req, res, next) => {
   Book.findOne({
     _id: req.params.id,
@@ -50,6 +57,7 @@ exports.getOneBook = (req, res, next) => {
     });
 };
 
+// Modifier un livre existant
 exports.modifyBook = (req, res, next) => {
   const bookObject = req.file
     ? {
@@ -64,13 +72,13 @@ exports.modifyBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (book.userId != req.auth.userId) {
-        res.status(401).json({ message: "Not authorized" });
+        res.status(401).json({ message: "Non autorisé" });
       } else {
         Book.updateOne(
           { _id: req.params.id },
           { ...bookObject, _id: req.params.id }
         )
-          .then(() => res.status(200).json({ message: "Objet modifié!" }))
+          .then(() => res.status(200).json({ message: "Objet modifié !" }))
           .catch((error) => res.status(401).json({ error }));
       }
     })
@@ -79,11 +87,12 @@ exports.modifyBook = (req, res, next) => {
     });
 };
 
+// Supprimer un livre
 exports.deleteBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (book.userId != req.auth.userId) {
-        res.status(401).json({ message: "Not authorized" });
+        res.status(401).json({ message: "Non autorisé" });
       } else {
         const filename = book.imageUrl.split("/images/")[1];
         fs.unlink(`images/${filename}`, () => {
@@ -100,6 +109,7 @@ exports.deleteBook = (req, res, next) => {
     });
 };
 
+// Récupérer tous les livres
 exports.getBooks = (req, res, next) => {
   Book.find()
     .then((books) => {
@@ -112,6 +122,7 @@ exports.getBooks = (req, res, next) => {
     });
 };
 
+// Récupérer les meilleurs classements
 exports.bestRatings = (req, res, next) => {
   Book.find()
     .sort({ averageRating: -1 })
@@ -125,10 +136,11 @@ exports.bestRatings = (req, res, next) => {
     });
 };
 
+// Ajouter une note à un livre
 exports.rating = (req, res, next) => {
   let currentRating = parseInt(req.body.rating);
   if (currentRating < 0 || currentRating > 5) {
-    // renvoyer une erreur appropriée
+    // Renvoyer une erreur appropriée
   }
   Book.findOne({
     _id: req.params.id,
@@ -142,7 +154,7 @@ exports.rating = (req, res, next) => {
           rating.grade = currentRating;
           found = true;
         }
-        console.log("adding to the total " + rating.grade);
+        console.log("ajouter au total " + rating.grade);
         total += parseInt(rating.grade);
         count++;
       }
@@ -151,7 +163,7 @@ exports.rating = (req, res, next) => {
           userId: req.auth.userId,
           grade: currentRating,
         });
-        console.log("adding to the total " + currentRating);
+        console.log("ajouter au total " + currentRating);
         total += currentRating;
         count++;
       }
