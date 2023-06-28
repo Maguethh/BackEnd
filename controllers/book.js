@@ -139,9 +139,10 @@ exports.bestRatings = (req, res, next) => {
 // Ajouter une note à un livre
 exports.rating = (req, res, next) => {
   let currentRating = parseInt(req.body.rating);
-  if (currentRating < 0 || currentRating > 5) {
-    // Renvoyer une erreur appropriée
+  if (currentRating < 1 || currentRating > 5) {
+    return res.status(400).json({ error: "La note doit être entre 1 et 5" });
   }
+
   Book.findOne({
     _id: req.params.id,
   })
