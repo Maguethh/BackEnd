@@ -42,6 +42,5 @@ console.log(process.env.MONGODB_CONNECTION_STRING);
 app.use("/api/books", bookRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/images", express.static(path.join(__dirname, "images")));
-app.use("/images2", express.static(path.join(__dirname, "images2")));
 
 module.exports = app;
