@@ -1,44 +1,69 @@
 const Book = require("../models/book");
 const sharp = require("sharp");
 const fs = require("fs");
+const path = require("path");
 
 // Créer un nouveau livre
 exports.createBook = (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
   delete bookObject._userId;
-  let path = "./images/" + req.file.filename;
-  let newpath = "./images2/" + req.file.filename;
+  let imagePath = "./images/" + req.file.filename;
 
   // Redimensionner et traiter l'image en utilisant sharp
-  sharp(path)
+  sharp(imagePath)
     .resize(498, 568)
-    .png()
-    .toFile(newpath)
-    .then((data) => {
-      console.log("images ok");
+    .jpeg()
+    .toBuffer()
+    .then((buffer) => {
+      const newImagePath = path.join(
+        "./images/",
+        path.parse(imagePath).name + ".jpg"
+      );
 
-      // Créer un nouvel objet livre avec les données fournies
-      const book = new Book({
-        ...bookObject,
-        userId: req.auth.userId,
-        imageUrl: `${req.protocol}://${req.get("host")}/images2/${
-          req.file.filename
-        }`,
-      });
+      fs.writeFile(newImagePath, buffer, (error) => {
+        if (error) {
+          console.log(error);
+          return res.status(500).json({
+            error: "Erreur lors de la sauvegarde de l'image redimensionnée",
+          });
+        }
 
-      // Enregistrer le livre dans la base de données
-      book
-        .save()
-        .then(() => {
-          res.status(201).json({ message: "Objet enregistré !" });
-        })
-        .catch((error) => {
-          res.status(400).json({ error });
+        // Supprimer l'image originale
+        fs.unlink(imagePath, (error) => {
+          if (error) {
+            console.log(error);
+            return res.status(500).json({
+              error: "Erreur lors de la suppression de l'image originale",
+            });
+          }
+
+          // Créer un nouvel objet livre avec les données fournies
+          const book = new Book({
+            ...bookObject,
+            userId: req.auth.userId,
+            imageUrl: `${req.protocol}://${req.get("host")}/images/${
+              path.parse(newImagePath).base
+            }`,
+          });
+
+          // Enregistrer le livre dans la base de données
+          book
+            .save()
+            .then(() => {
+              res.status(201).json({ message: "Objet enregistré !" });
+            })
+            .catch((error) => {
+              res.status(400).json({ error });
+            });
         });
+      });
     })
     .catch((err) => {
       console.log(err);
+      res
+        .status(500)
+        .json({ error: "Erreur lors du redimensionnement de l'image" });
     });
 };
 
